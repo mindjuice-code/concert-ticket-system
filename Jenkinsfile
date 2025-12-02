@@ -65,7 +65,7 @@ pipeline {
                     
                     while (retryCount < maxRetries && !healthy) {
                         try {
-                            bat 'curl -f http://localhost:8000/health'
+                            bat 'curl -f http://localhost:8000/index.php/health'
                             healthy = true
                             echo 'Backend is healthy!'
                         } catch (Exception e) {
