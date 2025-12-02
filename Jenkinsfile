@@ -1,11 +1,16 @@
 pipeline {
     agent any
+    triggers {
+        // Poll SCM as fallback if webhook fails
+        pollSCM('H/2 * * * *')
+    }
+
     
     environment {
         COMPOSE_PROJECT_NAME = 'concert-tickets'
-        // Add Docker to PATH for Windows
+       
         PATH = "C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Windows\\System32;${env.PATH}"
-        // Database credentials (use Jenkins credentials in production)
+        
         DB_HOST = 'db'
         DB_NAME = 'concert_tickets'
         DB_USER = 'root'
