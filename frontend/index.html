@@ -79,16 +79,29 @@
         }
 
         .concert-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
+            background: white;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             transition: transform 0.3s;
+            overflow: hidden;
         }
 
         .concert-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .concert-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .concert-content {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
 
         .concert-card h3 {
@@ -105,6 +118,14 @@
 
         .concert-info strong {
             min-width: 110px;
+        }
+
+        .price-range {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
         }
 
         .book-btn {
@@ -124,6 +145,13 @@
         .book-btn:hover {
             background: #f0f0f0;
             transform: scale(1.05);
+        }
+
+        .book-btn:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .modal {
@@ -172,6 +200,14 @@
             padding: 10px;
             background: #f0f0f0;
             border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-price {
+            color: #10b981;
+            font-size: 16px;
         }
 
         .row-container {
@@ -205,6 +241,22 @@
             font-weight: bold;
             transition: all 0.3s;
             background: #fff;
+            position: relative;
+        }
+
+        .seat:hover::after {
+            content: attr(data-price);
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 1000;
         }
 
         .seat.available:hover {
@@ -284,6 +336,12 @@
         .selected-seats-summary h4 {
             margin-bottom: 10px;
             color: #667eea;
+        }
+
+        .seat-breakdown {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
         }
 
         .submit-btn {
@@ -430,7 +488,8 @@
             <div class="selected-seats-summary" id="selectedSummary" style="display: none;">
                 <h4>Selected Seats</h4>
                 <p id="selectedSeatsText">None</p>
-                <p><strong>Total: ฿<span id="totalPrice">0</span></strong></p>
+                <div id="seatBreakdown" class="seat-breakdown"></div>
+                <p style="margin-top: 10px;"><strong>Total: ฿<span id="totalPrice">0</span></strong></p>
             </div>
 
             <form id="bookingForm">
@@ -459,7 +518,7 @@
     <script>
         const API_URL = 'http://localhost:8000/index.php';
         let selectedSeats = [];
-        let currentConcertPrice = 0;
+        let sectionPrices = {};
 
         loadConcerts();
         loadBookings();
@@ -488,38 +547,60 @@
 
         function displayConcerts(concerts) {
             const container = document.getElementById('concerts-list');
-            container.innerHTML = concerts.map(concert => `
+            container.innerHTML = concerts.map(concert => {
+                // Handle price display - check for min/max price or fall back to regular price
+                let priceDisplay;
+                if (concert.min_price && concert.max_price) {
+                    priceDisplay = concert.min_price === concert.max_price 
+                        ? `฿${parseFloat(concert.min_price).toFixed(2)}` 
+                        : `฿${parseFloat(concert.min_price).toFixed(2)} - ฿${parseFloat(concert.max_price).toFixed(2)}`;
+                } else if (concert.price) {
+                    priceDisplay = `฿${parseFloat(concert.price).toFixed(2)}`;
+                } else {
+                    priceDisplay = 'Price TBA';
+                }
+                
+                // Use concert image or fallback gradient
+                const imageHtml = concert.image_url 
+                    ? `<img src="${concert.image_url}" alt="${concert.name}" class="concert-image" onerror="this.style.display='none'">`
+                    : `<div class="concert-image"></div>`;
+                
+                return `
                 <div class="concert-card">
-                    <h3>${concert.name}</h3>
-                    <div class="concert-info">
-                        <strong> Venue:</strong> ${concert.venue}
+                    ${imageHtml}
+                    <div class="concert-content">
+                        <h3>${concert.name}</h3>
+                        <div class="concert-info">
+                            <strong>Venue:</strong> ${concert.venue}
+                        </div>
+                        <div class="concert-info">
+                            <strong>Date:</strong> ${concert.date}
+                        </div>
+                        <div class="concert-info">
+                            <strong>Time:</strong> ${concert.time}
+                        </div>
+                        <div class="concert-info">
+                            <strong>Available:</strong> ${concert.available_seats} / ${concert.total_seats}
+                        </div>
+                        <div class="price-range">
+                            <strong>Price:</strong> ${priceDisplay}
+                        </div>
+                        <button class="book-btn" onclick="openSeatSelection(${concert.id}, '${concert.name}')" ${concert.available_seats === 0 ? 'disabled' : ''}>
+                            ${concert.available_seats === 0 ? 'Sold Out' : 'Select Seats'}
+                        </button>
                     </div>
-                    <div class="concert-info">
-                        <strong> Date:</strong> ${concert.date}
-                    </div>
-                    <div class="concert-info">
-                        <strong> Time:</strong> ${concert.time}
-                    </div>
-                    <div class="concert-info">
-                        <strong> Available:</strong> ${concert.available_seats} / ${concert.total_seats}
-                    </div>
-                    <div class="concert-info">
-                        <strong> Price/Seat:</strong> ฿${concert.price}
-                    </div>
-                    <button class="book-btn" onclick="openSeatSelection(${concert.id}, '${concert.name}', ${concert.price})" ${concert.available_seats === 0 ? 'disabled' : ''}>
-                        ${concert.available_seats === 0 ? 'Sold Out' : 'Select Seats'}
-                    </button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
-        async function openSeatSelection(concertId, concertName, price) {
+        async function openSeatSelection(concertId, concertName) {
             selectedSeats = [];
-            currentConcertPrice = price;
+            sectionPrices = {};
             document.getElementById('concertId').value = concertId;
             document.getElementById('concertDetails').innerHTML = `
                 <h3>${concertName}</h3>
-                <p>Price per seat: ฿${price}</p>
+                <p style="color: #666;">Hover over seats to see prices</p>
             `;
             document.getElementById('seatModal').style.display = 'block';
             
@@ -533,8 +614,9 @@
             
             try {
                 const response = await fetch(`${API_URL}/seats/concert/${concertId}`);
-                const seatsData = await response.json();
-                displaySeats(seatsData);
+                const data = await response.json();
+                sectionPrices = data.section_prices || {};
+                displaySeats(data.seats || data);
             } catch (error) {
                 container.innerHTML = '<div class="alert alert-error">Failed to load seats</div>';
             }
@@ -545,8 +627,12 @@
             let html = '';
             
             for (const [section, rows] of Object.entries(seatsData)) {
+                const sectionPrice = sectionPrices[section] || 0;
                 html += `<div class="section-container">
-                    <div class="section-title">${section} Section</div>`;
+                    <div class="section-title">
+                        <span>${section} Section</span>
+                        <span class="section-price">฿${parseFloat(sectionPrice).toFixed(2)} per seat</span>
+                    </div>`;
                 
                 for (const [row, seats] of Object.entries(rows)) {
                     html += `<div class="row-container">
@@ -556,12 +642,15 @@
                     seats.forEach(seat => {
                         const available = seat.is_available === 1 || seat.is_available === true;
                         const seatClass = available ? 'available' : 'unavailable';
+                        const seatPrice = parseFloat(seat.price || 0).toFixed(2);
                         html += `
                             <div class="seat ${seatClass}" 
                                  data-seat-id="${seat.id}"
                                  data-section="${seat.section}"
                                  data-row="${seat.row_label}"
                                  data-seat="${seat.seat_number}"
+                                 data-price="฿${seatPrice}"
+                                 data-price-value="${seatPrice}"
                                  onclick="toggleSeat(this, ${available})">
                                 ${seat.seat_number}
                             </div>`;
@@ -584,7 +673,8 @@
                 id: seatId,
                 section: element.dataset.section,
                 row: element.dataset.row,
-                seat: element.dataset.seat
+                seat: element.dataset.seat,
+                price: parseFloat(element.dataset.priceValue)
             };
             
             if (element.classList.contains('selected')) {
@@ -608,8 +698,26 @@
                     `${s.section}-${s.row}${s.seat}`
                 ).join(', ');
                 document.getElementById('selectedSeatsText').textContent = seatsText;
-                document.getElementById('totalPrice').textContent = 
-                    (currentConcertPrice * selectedSeats.length).toFixed(2);
+                
+                // Show price breakdown by section
+                const breakdown = {};
+                let total = 0;
+                selectedSeats.forEach(seat => {
+                    if (!breakdown[seat.section]) {
+                        breakdown[seat.section] = { count: 0, total: 0 };
+                    }
+                    breakdown[seat.section].count++;
+                    breakdown[seat.section].total += seat.price;
+                    total += seat.price;
+                });
+                
+                let breakdownHtml = '';
+                for (const [section, info] of Object.entries(breakdown)) {
+                    breakdownHtml += `<div>${section}: ${info.count} seat(s) × ฿${(info.total / info.count).toFixed(2)} = ฿${info.total.toFixed(2)}</div>`;
+                }
+                document.getElementById('seatBreakdown').innerHTML = breakdownHtml;
+                
+                document.getElementById('totalPrice').textContent = total.toFixed(2);
                 document.getElementById('selectedSeatIds').value = 
                     selectedSeats.map(s => s.id).join(',');
                 submitBtn.disabled = false;

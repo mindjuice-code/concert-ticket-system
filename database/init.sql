@@ -12,16 +12,18 @@ CREATE TABLE IF NOT EXISTS concerts (
     total_seats INT NOT NULL,
     available_seats INT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
+    image_url VARCHAR(500) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Seats table - tracks individual seats
+-- Seats table - tracks individual seats with pricing
 CREATE TABLE IF NOT EXISTS seats (
     id INT AUTO_INCREMENT PRIMARY KEY,
     concert_id INT NOT NULL,
     section VARCHAR(50) NOT NULL,
     row_label VARCHAR(10) NOT NULL,
     seat_number VARCHAR(10) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     is_available BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (concert_id) REFERENCES concerts(id) ON DELETE CASCADE,
     UNIQUE KEY unique_seat (concert_id, section, row_label, seat_number)
@@ -50,17 +52,17 @@ CREATE TABLE IF NOT EXISTS ticket_seats (
     UNIQUE KEY unique_ticket_seat (ticket_id, seat_id)
 );
 
--- Insert sample concerts
-INSERT INTO concerts (name, venue, date, time, total_seats, available_seats, price) VALUES
-('Rock Night 2025', 'Bangkok Arena', '2025-03-15', '20:00:00', 100, 100, 1500.00),
-('Jazz Evening', 'Blue Note Club', '2025-04-20', '19:30:00', 50, 50, 800.00),
-('Pop Concert Extravaganza', 'Thunder Dome', '2025-05-10', '18:00:00', 80, 80, 2000.00),
-('Classical Symphony', 'Bangkok Concert Hall', '2025-06-05', '19:00:00', 60, 60, 1200.00),
-('EDM Festival', 'Central World Plaza', '2025-07-22', '21:00:00', 100, 100, 1800.00);
+-- Insert sample concerts with image URLs
+INSERT INTO concerts (name, venue, date, time, total_seats, available_seats, price, image_url) VALUES
+('Rock Night 2025', 'Bangkok Arena', '2025-03-15', '20:00:00', 100, 100, 1500.00, 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800'),
+('Jazz Evening', 'Blue Note Club', '2025-04-20', '19:30:00', 50, 50, 800.00, 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=800'),
+('Pop Concert Extravaganza', 'Thunder Dome', '2025-05-10', '18:00:00', 80, 80, 2000.00, 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800'),
+('Classical Symphony', 'Bangkok Concert Hall', '2025-06-05', '19:00:00', 60, 60, 1200.00, 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=800'),
+('EDM Festival', 'Central World Plaza', '2025-07-22', '21:00:00', 100, 100, 1800.00, 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800');
 
--- Generate seats for Concert 1: Rock Night (100 seats: 30 VIP + 70 Regular)
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 1, 'VIP', row_letter, seat_num, TRUE
+-- Generate seats for Concert 1: Rock Night (100 seats: 30 VIP @ ฿2000 + 70 Regular @ ฿1500)
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 1, 'VIP', row_letter, seat_num, 2000.00, TRUE
 FROM (
     SELECT 'A' as row_letter UNION ALL SELECT 'B' UNION ALL SELECT 'C'
 ) r
@@ -69,8 +71,8 @@ CROSS JOIN (
     UNION ALL SELECT '6' UNION ALL SELECT '7' UNION ALL SELECT '8' UNION ALL SELECT '9' UNION ALL SELECT '10'
 ) s;
 
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 1, 'REGULAR', row_letter, seat_num, TRUE
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 1, 'REGULAR', row_letter, seat_num, 1500.00, TRUE
 FROM (
     SELECT 'D' as row_letter UNION ALL SELECT 'E' UNION ALL SELECT 'F' UNION ALL SELECT 'G'
     UNION ALL SELECT 'H' UNION ALL SELECT 'I' UNION ALL SELECT 'J'
@@ -80,9 +82,9 @@ CROSS JOIN (
     UNION ALL SELECT '6' UNION ALL SELECT '7' UNION ALL SELECT '8' UNION ALL SELECT '9' UNION ALL SELECT '10'
 ) s;
 
--- Generate seats for Concert 2: Jazz Evening (50 seats: 20 Front + 30 Back)
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 2, 'FRONT', row_letter, seat_num, TRUE
+-- Generate seats for Concert 2: Jazz Evening (50 seats: 20 Front @ ฿1000 + 30 Back @ ฿800)
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 2, 'FRONT', row_letter, seat_num, 1000.00, TRUE
 FROM (
     SELECT 'A' as row_letter UNION ALL SELECT 'B'
 ) r
@@ -91,8 +93,8 @@ CROSS JOIN (
     UNION ALL SELECT '6' UNION ALL SELECT '7' UNION ALL SELECT '8' UNION ALL SELECT '9' UNION ALL SELECT '10'
 ) s;
 
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 2, 'BACK', row_letter, seat_num, TRUE
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 2, 'BACK', row_letter, seat_num, 800.00, TRUE
 FROM (
     SELECT 'C' as row_letter UNION ALL SELECT 'D' UNION ALL SELECT 'E'
 ) r
@@ -101,9 +103,9 @@ CROSS JOIN (
     UNION ALL SELECT '6' UNION ALL SELECT '7' UNION ALL SELECT '8' UNION ALL SELECT '9' UNION ALL SELECT '10'
 ) s;
 
--- Generate seats for Concert 3: Pop Concert (80 seats: 20 VIP + 60 Regular)
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 3, 'VIP', row_letter, seat_num, TRUE
+-- Generate seats for Concert 3: Pop Concert (80 seats: 20 VIP @ ฿2500 + 60 Regular @ ฿2000)
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 3, 'VIP', row_letter, seat_num, 2500.00, TRUE
 FROM (
     SELECT 'A' as row_letter UNION ALL SELECT 'B'
 ) r
@@ -112,8 +114,8 @@ CROSS JOIN (
     UNION ALL SELECT '6' UNION ALL SELECT '7' UNION ALL SELECT '8' UNION ALL SELECT '9' UNION ALL SELECT '10'
 ) s;
 
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 3, 'REGULAR', row_letter, seat_num, TRUE
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 3, 'REGULAR', row_letter, seat_num, 2000.00, TRUE
 FROM (
     SELECT 'C' as row_letter UNION ALL SELECT 'D' UNION ALL SELECT 'E' UNION ALL SELECT 'F'
     UNION ALL SELECT 'G' UNION ALL SELECT 'H'
@@ -123,9 +125,9 @@ CROSS JOIN (
     UNION ALL SELECT '6' UNION ALL SELECT '7' UNION ALL SELECT '8' UNION ALL SELECT '9' UNION ALL SELECT '10'
 ) s;
 
--- Generate seats for Concert 4: Classical Symphony (60 seats in Orchestra section)
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 4, 'ORCHESTRA', row_letter, seat_num, TRUE
+-- Generate seats for Concert 4: Classical Symphony (60 seats in Orchestra @ ฿1200)
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 4, 'ORCHESTRA', row_letter, seat_num, 1200.00, TRUE
 FROM (
     SELECT 'A' as row_letter UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D'
     UNION ALL SELECT 'E' UNION ALL SELECT 'F'
@@ -135,9 +137,9 @@ CROSS JOIN (
     UNION ALL SELECT '6' UNION ALL SELECT '7' UNION ALL SELECT '8' UNION ALL SELECT '9' UNION ALL SELECT '10'
 ) s;
 
--- Generate seats for Concert 5: EDM Festival (100 seats in General section)
-INSERT INTO seats (concert_id, section, row_label, seat_number, is_available)
-SELECT 5, 'GENERAL', row_letter, seat_num, TRUE
+-- Generate seats for Concert 5: EDM Festival (100 seats in General @ ฿1800)
+INSERT INTO seats (concert_id, section, row_label, seat_number, price, is_available)
+SELECT 5, 'GENERAL', row_letter, seat_num, 1800.00, TRUE
 FROM (
     SELECT 'A' as row_letter UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D' UNION ALL SELECT 'E'
     UNION ALL SELECT 'F' UNION ALL SELECT 'G' UNION ALL SELECT 'H' UNION ALL SELECT 'I' UNION ALL SELECT 'J'
@@ -149,7 +151,7 @@ CROSS JOIN (
 
 -- Insert sample bookings
 INSERT INTO tickets (concert_id, customer_name, customer_email, customer_phone, total_price, booking_status)
-VALUES (1, 'John Doe', 'john@example.com', '0812345678', 3000.00, 'confirmed');
+VALUES (1, 'John Doe', 'john@example.com', '0812345678', 4000.00, 'confirmed');
 SET @ticket1_id = LAST_INSERT_ID();
 
 INSERT INTO ticket_seats (ticket_id, seat_id)
@@ -159,7 +161,7 @@ UPDATE seats SET is_available = FALSE WHERE concert_id = 1 AND section = 'VIP' A
 
 -- Booking 2
 INSERT INTO tickets (concert_id, customer_name, customer_email, customer_phone, total_price, booking_status)
-VALUES (2, 'Jane Smith', 'jane@example.com', '0823456789', 800.00, 'confirmed');
+VALUES (2, 'Jane Smith', 'jane@example.com', '0823456789', 1000.00, 'confirmed');
 SET @ticket2_id = LAST_INSERT_ID();
 
 INSERT INTO ticket_seats (ticket_id, seat_id)
