@@ -3,6 +3,13 @@ pipeline {
     
     environment {
         COMPOSE_PROJECT_NAME = 'concert-tickets'
+        // Add Docker to PATH for Windows
+        PATH = "C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Windows\\System32;${env.PATH}"
+        // Database credentials (use Jenkins credentials in production)
+        DB_HOST = 'db'
+        DB_NAME = 'concert_tickets'
+        DB_USER = 'root'
+        DB_PASSWORD = 'rootpassword'
     }
     
     stages {
@@ -24,7 +31,10 @@ pipeline {
         stage('Stop Old Containers') {
             steps {
                 echo 'Stopping and removing old containers...'
-                bat 'docker compose down || exit 0'
+                bat '''
+                    docker compose down -v || exit 0
+                    docker rm -f concert_db concert_backend concert_frontend || exit 0
+                '''
             }
         }
         
@@ -84,13 +94,13 @@ pipeline {
     
     post {
         success {
-            echo 'Deployment successful!'
+            echo '✅ Deployment successful!'
             echo 'Frontend: http://localhost:3000'
             echo 'Backend API: http://localhost:8000'
             echo 'Database: localhost:3307'
         }
         failure {
-            echo 'Deployment failed!'
+            echo '❌ Deployment failed!'
             bat 'docker compose logs'
             bat 'docker compose down'
         }
