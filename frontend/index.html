@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JamPass</title>
+    <title>Concert Ticket Management System</title>
     <style>
         * {
             margin: 0;
@@ -457,7 +457,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000';
+        const API_URL = 'http://localhost:8000/index.php';
         let selectedSeats = [];
         let currentConcertPrice = 0;
 
@@ -492,19 +492,19 @@
                 <div class="concert-card">
                     <h3>${concert.name}</h3>
                     <div class="concert-info">
-                        <strong>Venue:</strong> ${concert.venue}
+                        <strong>📍 Venue:</strong> ${concert.venue}
                     </div>
                     <div class="concert-info">
-                        <strong>Date:</strong> ${concert.date}
+                        <strong>📅 Date:</strong> ${concert.date}
                     </div>
                     <div class="concert-info">
-                        <strong>Time:</strong> ${concert.time}
+                        <strong>🕐 Time:</strong> ${concert.time}
                     </div>
                     <div class="concert-info">
-                        <strong>Available:</strong> ${concert.available_seats} / ${concert.total_seats}
+                        <strong>🎟️ Available:</strong> ${concert.available_seats} / ${concert.total_seats}
                     </div>
                     <div class="concert-info">
-                        <strong>Price/Seat:</strong> ฿${concert.price}
+                        <strong>💰 Price/Seat:</strong> ฿${concert.price}
                     </div>
                     <button class="book-btn" onclick="openSeatSelection(${concert.id}, '${concert.name}', ${concert.price})" ${concert.available_seats === 0 ? 'disabled' : ''}>
                         ${concert.available_seats === 0 ? 'Sold Out' : 'Select Seats'}
@@ -560,7 +560,7 @@
                             <div class="seat ${seatClass}" 
                                  data-seat-id="${seat.id}"
                                  data-section="${seat.section}"
-                                 data-row="${seat.row_number}"
+                                 data-row="${seat.row_label}"
                                  data-seat="${seat.seat_number}"
                                  onclick="toggleSeat(this, ${available})">
                                 ${seat.seat_number}
@@ -639,15 +639,15 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showAlert(`Booking successful! ${result.seat_count} seat(s) booked. Total: ฿${result.total_price}`, 'success');
+                    showAlert(`✅ Booking successful! ${result.seat_count} seat(s) booked. Total: ฿${result.total_price}`, 'success');
                     closeModal();
                     loadConcerts();
                     loadBookings();
                 } else {
-                    showAlert( + (result.error || 'Booking failed'), 'error');
+                    showAlert('❌ ' + (result.error || 'Booking failed'), 'error');
                 }
             } catch (error) {
-                showAlert('Booking failed: ' + error.message, 'error');
+                showAlert('❌ Booking failed: ' + error.message, 'error');
             }
         });
 

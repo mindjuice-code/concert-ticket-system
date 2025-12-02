@@ -22,9 +22,24 @@ try {
     exit;
 }
 
-$method = $_SERVER['REQUEST_METHOD'];
-$request = explode('/', trim($_SERVER['PATH_INFO'] ?? '', '/'));
+// Parse request - handle multiple URL formats
+$requestUri = $_SERVER['REQUEST_URI'];
+$scriptName = $_SERVER['SCRIPT_NAME']; // Usually '/index.php'
+
+// Remove script name and query string
+$requestPath = str_replace($scriptName, '', $requestUri);
+$requestPath = strtok($requestPath, '?'); // Remove query string
+$requestPath = trim($requestPath, '/');
+
+$request = $requestPath ? explode('/', $requestPath) : [];
 $resource = $request[0] ?? '';
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Debug logging (optional - remove in production)
+error_log("Request URI: " . $requestUri);
+error_log("Script Name: " . $scriptName);
+error_log("Request Path: " . $requestPath);
+error_log("Resource: " . $resource);
 
 // Router
 switch ($resource) {
@@ -124,7 +139,7 @@ function handleSeats($pdo, $method, $request) {
                     $stmt = $pdo->prepare("
                         SELECT * FROM seats 
                         WHERE concert_id = ? 
-                        ORDER BY section, row_number, CAST(seat_number AS UNSIGNED)
+                        ORDER BY section, row_label, CAST(seat_number AS UNSIGNED)
                     ");
                     $stmt->execute([$concertId]);
                 }
@@ -135,7 +150,7 @@ function handleSeats($pdo, $method, $request) {
                 $grouped = [];
                 foreach ($seats as $seat) {
                     $section = $seat['section'];
-                    $row = $seat['row_number'];
+                    $row = $seat['row_label'];
                     if (!isset($grouped[$section])) {
                         $grouped[$section] = [];
                     }
@@ -164,7 +179,7 @@ function handleTickets($pdo, $method, $request) {
                 $concertId = $request[2] ?? null;
                 $stmt = $pdo->prepare("
                     SELECT t.*, c.name as concert_name,
-                           GROUP_CONCAT(CONCAT(s.section, '-', s.row_number, s.seat_number) SEPARATOR ', ') as seats
+                           GROUP_CONCAT(CONCAT(s.section, '-', s.row_label, s.seat_number) SEPARATOR ', ') as seats
                     FROM tickets t 
                     JOIN concerts c ON t.concert_id = c.id
                     LEFT JOIN ticket_seats ts ON t.id = ts.ticket_id
@@ -179,7 +194,7 @@ function handleTickets($pdo, $method, $request) {
                 // Get single ticket with seat details
                 $stmt = $pdo->prepare("
                     SELECT t.*, c.name as concert_name, c.venue, c.date, c.time,
-                           GROUP_CONCAT(CONCAT(s.section, '-', s.row_number, s.seat_number) SEPARATOR ', ') as seats
+                           GROUP_CONCAT(CONCAT(s.section, '-', s.row_label, s.seat_number) SEPARATOR ', ') as seats
                     FROM tickets t 
                     JOIN concerts c ON t.concert_id = c.id
                     LEFT JOIN ticket_seats ts ON t.id = ts.ticket_id
@@ -193,7 +208,7 @@ function handleTickets($pdo, $method, $request) {
                 // Get all tickets with seat details
                 $stmt = $pdo->query("
                     SELECT t.*, c.name as concert_name,
-                           GROUP_CONCAT(CONCAT(s.section, '-', s.row_number, s.seat_number) SEPARATOR ', ') as seats
+                           GROUP_CONCAT(CONCAT(s.section, '-', s.row_label, s.seat_number) SEPARATOR ', ') as seats
                     FROM tickets t 
                     JOIN concerts c ON t.concert_id = c.id
                     LEFT JOIN ticket_seats ts ON t.id = ts.ticket_id
@@ -218,7 +233,7 @@ function handleTickets($pdo, $method, $request) {
                 // Check if all seats are available
                 $placeholders = str_repeat('?,', count($data['seat_ids']) - 1) . '?';
                 $stmt = $pdo->prepare("
-                    SELECT id, is_available, section, row_number, seat_number 
+                    SELECT id, is_available, section, row_label, seat_number 
                     FROM seats 
                     WHERE id IN ($placeholders) AND concert_id = ?
                 ");
@@ -232,7 +247,7 @@ function handleTickets($pdo, $method, $request) {
                 
                 foreach ($seats as $seat) {
                     if (!$seat['is_available']) {
-                        throw new Exception("Seat {$seat['section']}-{$seat['row_number']}{$seat['seat_number']} is no longer available");
+                        throw new Exception("Seat {$seat['section']}-{$seat['row_label']}{$seat['seat_number']} is no longer available");
                     }
                 }
                 
