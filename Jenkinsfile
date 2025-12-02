@@ -2,7 +2,7 @@ pipeline {
     agent any
     triggers {
         // Poll SCM as fallback if webhook fails
-        pollSCM('H/2 * * * *')
+        pollSCM('H/1 * * * *')
     }
 
     
