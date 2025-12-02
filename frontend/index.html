@@ -492,19 +492,19 @@
                 <div class="concert-card">
                     <h3>${concert.name}</h3>
                     <div class="concert-info">
-                        <strong>📍 Venue:</strong> ${concert.venue}
+                        <strong> Venue:</strong> ${concert.venue}
                     </div>
                     <div class="concert-info">
-                        <strong>📅 Date:</strong> ${concert.date}
+                        <strong> Date:</strong> ${concert.date}
                     </div>
                     <div class="concert-info">
-                        <strong>🕐 Time:</strong> ${concert.time}
+                        <strong> Time:</strong> ${concert.time}
                     </div>
                     <div class="concert-info">
-                        <strong>🎟️ Available:</strong> ${concert.available_seats} / ${concert.total_seats}
+                        <strong> Available:</strong> ${concert.available_seats} / ${concert.total_seats}
                     </div>
                     <div class="concert-info">
-                        <strong>💰 Price/Seat:</strong> ฿${concert.price}
+                        <strong> Price/Seat:</strong> ฿${concert.price}
                     </div>
                     <button class="book-btn" onclick="openSeatSelection(${concert.id}, '${concert.name}', ${concert.price})" ${concert.available_seats === 0 ? 'disabled' : ''}>
                         ${concert.available_seats === 0 ? 'Sold Out' : 'Select Seats'}
